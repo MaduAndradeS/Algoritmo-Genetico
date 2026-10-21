@@ -32,6 +32,12 @@ o perímetro do polígono regular, `n * 2 * raio * sen(pi/n)`.
 
 ## Próximos passos dos três integrantes
 
+A parte de dados já tem verificações automatizadas (`make verificar`) e um
+preparador do plano experimental (`make experimentos`). O protocolo e o
+combinado de integração estão em [experimentos/PROTOCOLO.md](experimentos/PROTOCOLO.md).
+O preparador gera pontos fixos e 100 execuções planejadas; os resultados da
+otimização permanecem vazios até a integração do ciclo evolutivo.
+
 ### Integrante 1 — dados e experimentos
 
 A base já está implementada. Revisar as distâncias e os dois cenários.
