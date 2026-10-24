@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QString>
 #include <QWidget>
 #include <vector>
 
@@ -13,6 +14,7 @@ public:
     explicit WidgetRota(QWidget* pai = nullptr);
 
     void definir(const std::vector<Ponto>& pontos, const Rota& rota);
+    void definirTitulo(const QString& titulo);
 
 protected:
     void paintEvent(QPaintEvent* evento) override;
@@ -20,4 +22,5 @@ protected:
 private:
     std::vector<Ponto> pontos_;
     Rota rota_;
+    QString titulo_;
 };
