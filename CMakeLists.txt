@@ -13,6 +13,10 @@ add_executable(caixeiro_qt
     janela.hpp
     widgetrota.cpp
     widgetrota.hpp
+    widgetgrafico.cpp
+    widgetgrafico.hpp
+    trabalhador.cpp
+    trabalhador.hpp
     cenarios.cpp
     cenarios.hpp
     genetico.cpp
