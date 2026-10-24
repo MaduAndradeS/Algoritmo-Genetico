@@ -20,3 +20,11 @@ build/preparar_experimentos: preparar_experimentos.cpp cenarios.cpp cenarios.hpp
 
 experimentos: build/preparar_experimentos
 	./build/preparar_experimentos
+
+build/verificar_ciclo: verificar_ciclo.cpp ciclo.cpp ciclo.hpp genetico.cpp genetico.hpp cenarios.cpp cenarios.hpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS) verificar_ciclo.cpp ciclo.cpp genetico.cpp cenarios.cpp -o $@
+
+.PHONY: verificar_ciclo
+verificar_ciclo: build/verificar_ciclo
+	./build/verificar_ciclo

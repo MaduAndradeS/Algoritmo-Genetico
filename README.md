@@ -81,3 +81,41 @@ A interface completa vem depois que o ciclo evolutivo funcionar.
 A mesma semente reproduz a execução no mesmo ambiente C++. As sequências
 não precisam coincidir com a versão anterior em Python, nem entre diferentes
 implementações da biblioteca padrão C++. Registrem compilador e ambiente.
+
+## Etapa 2 — ciclo evolutivo
+
+O ciclo completo foi implementado em `ciclo.hpp` e `ciclo.cpp`, aproveitando
+os operadores ja existentes de `genetico.cpp`. Por padrao, usa populacao 100,
+crossover OX de 90%, mutacao por inversao de 10% por filho, 1 elite,
+torneio de 3, limite de 1000 geracoes e parada apos 200 geracoes sem melhora.
+
+- `executar_ag(pontos, parametros, callback)` retorna `ResultadoAG`, com a
+  melhor rota, distancia final, tempo, numero de geracoes evoluidas e historico.
+- `historico[0]` guarda a populacao inicial; `historico[g]` registra a melhor
+  rota daquela geracao, a melhor distancia, a media e o tempo acumulado.
+- O `callback` opcional e chamado a cada geracao. Para uso com Qt, execute o
+  algoritmo fora da thread da interface e encaminhe atualizacoes por sinais.
+  Nao modifique widgets Qt diretamente dentro do callback de uma worker thread.
+- As distancias entre pontos sao pre-calculadas em uma matriz antes do cronometro;
+  o cronometro mede criacao da populacao e ciclo evolutivo, sem desenhar pontos.
+- `geracoes_executadas` nao inclui a geracao inicial, logo o historico tem
+  `geracoes_executadas + 1` registros.
+
+Testar esta etapa sem Qt:
+
+```bash
+make verificar_ciclo
+```
+
+Exemplo de uso em outra unidade de codigo:
+
+```cpp
+#include "ciclo.hpp"
+#include "cenarios.hpp"
+
+auto pontos = gerar_pontos("circular", 10, 42);
+ParametrosAG parametros;
+parametros.semente = 1;
+auto resultado = executar_ag(pontos, parametros);
+// resultado.historico[i].melhor_rota e .melhor_distancia
+```

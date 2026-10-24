@@ -15,6 +15,10 @@ add_executable(caixeiro_qt
     widgetrota.hpp
     cenarios.cpp
     cenarios.hpp
+    genetico.cpp
+    genetico.hpp
+    ciclo.cpp
+    ciclo.hpp
 )
 
 target_link_libraries(caixeiro_qt PRIVATE Qt6::Widgets)
