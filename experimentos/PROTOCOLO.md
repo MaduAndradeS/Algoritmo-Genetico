@@ -1,108 +1,87 @@
-# Dados e experimentos — integrante 1
+# Protocolo dos experimentos comparativos
 
-## O que esta pronto
+## Situação
 
-Os cenarios e a avaliacao estao implementados em `cenarios.cpp`. A verificacao
-automatizada cobre distancias conhecidas, retorno ao inicio, invariancia por
-inversao e mudanca de inicio, rotas invalidas, geometria circular, limites dos
-pontos aleatorios e repetibilidade das sementes. Execute na raiz:
+A integração foi concluída e as comparações foram executadas. Veja
+[comparativos/RESULTADOS.md](comparativos/RESULTADOS.md) e
+[EXPLICACAO.md](EXPLICACAO.md). As antigas pastas `dados` e `dados_rodada_2`
+continham planejamento, não resultados do algoritmo.
+
+## Desenho experimental
+
+- Rodada principal: 10 cidades; extensão: 30 cidades.
+- Cenários aleatório e circular. Um mapa fixo por cenário e tamanho, semente 42.
+- Populações 50, 100 e 200, mantendo mutação 10%.
+- Mutações 1%, 5% e 10%, mantendo população 100.
+- A configuração população 100 / mutação 10% é compartilhada.
+- Dez sementes do AG, 1 a 10, por configuração. São 200 execuções ao todo.
+- Cruzamento OX 90%, elitismo 1, torneio 3 e parada em 1.000 gerações ou
+  200 consecutivas sem melhoria estrita.
+
+A extensão de 30 cidades foi estabelecida antes da leitura dos resultados,
+para observar um problema maior. Os geradores dos pontos e da busca usam
+sementes separadas. Cada comparação altera uma variável; as interações
+entre todas as combinações de população e mutação não foram estudadas.
+
+## Execução e arquivos
+
+Da raiz do projeto, com C++17, Make e Python 3:
 
 ```bash
-make verificar
-make experimentos
+make verificar verificar_genetico verificar_ciclo
+make comparativos SAIDA=experimentos/nova_comparacao
 ```
 
-O segundo comando **prepara** 100 execucoes; nao executa o algoritmo genetico.
-Gera tres arquivos em `experimentos/dados/`:
+A pasta deve ser nova. O executor não sobrescreve saídas existentes.
+O algoritmo roda sequencialmente, sem callback da interface. As validações
+independentes e a exportação ocorrem após cada busca, fora de seu cronômetro.
 
-| Arquivo | Conteudo |
+| Arquivo | Conteúdo |
 | --- | --- |
-| `pontos.csv` | Os dois conjuntos fixos de 10 pontos, com indices e coordenadas. |
-| `plano.csv` | Parametros de cada execucao, referencia aleatoria e ideal circular. |
-| `resultados.csv` | Uma linha por execucao, com status pendente e metricas vazias. |
+| `resultados.csv` | Parâmetros, sementes, métricas e status por execução. |
+| `historico.csv` | Melhor distância, média da população e tempo por geração. |
+| `pontos.csv` | Coordenadas e índices dos quatro mapas. |
+| `rotas.csv` | Melhor rota inicial e final de cada execução. |
+| `resumo.csv` | Médias e desvios-padrão amostrais por configuração. |
+| `relatorio.html` | Tabelas e gráficos para abrir no navegador. |
+| `RESULTADOS.md` | Método, observações, resultados e limitações. |
+| `comparacoes.svg` | Médias e desvios de distância e tempo. |
+| `convergencia.svg` | Curvas ilustrativas da semente 1 em cada configuração. |
+| `rotas.svg` | Rotas ilustrativas com população 100, mutação 10%, semente 1. |
+| `ambiente.txt`, `compilador.txt` | Ambiente, versão e informações de reprodução. |
 
-Os arquivos gerados ficam fora do Git. O preparador recusa sobrescrever arquivos
-existentes. Para uma nova rodada, use uma pasta nova:
+O analisador captura o ambiente e os hashes das fontes presentes na análise
+quando `ambiente.txt` ainda não existe. Na rodada entregue, o arquivo foi
+registrado junto à execução. Se compilar com flags diferentes das padrões,
+registre-as manualmente. Não altere as fontes entre a busca e a análise.
 
-```bash
-./build/preparar_experimentos experimentos/dados_rodada_2
-```
+## Definições das métricas
 
-## Comparacao controlada
+- **Distância inicial:** melhor indivíduo da população na geração zero.
+- **Melhor distância:** melhor solução devolvida pelo ciclo.
+- **Referência aleatória:** rota isolada de `criar_rota_aleatoria(n, semente_ag)`
+  sobre os mesmos pontos. Não é a melhor rota da população inicial.
+- **Melhoria inicial:** `100 × (inicial − final) / inicial`.
+- **Melhoria sobre referência:** `100 × (referência − final) / referência`.
+- **Excesso circular:** `100 × (final / ideal − 1)`. Vazio no mapa aleatório.
+- **Tempo:** cronômetro interno do ciclo, incluindo população, evolução e
+  histórico, excluindo geração dos pontos, matriz de distâncias e exportações.
+- **Gerações:** apenas as evoluídas. O histórico inclui também a geração zero.
 
-Usaremos os cenarios aleatorio e circular, ambos com 10 pontos. A semente dos
-pontos sera sempre 42; as sementes do algoritmo serao 1 a 10 para cada
-configuracao. Assim, variar a aleatoriedade da busca nao muda o problema.
+O ideal circular é o perímetro do polígono regular, `n × 2 × raio × sen(pi/n)`.
+O ótimo do mapa aleatório não foi determinado. Os resultados não usam células
+vazias como zero. O executor falha com código diferente de zero ao encontrar
+inconsistência; uma pasta parcial não deve ser apresentada como rodada concluída.
 
-| Comparacao | Populacoes | Mutacao por filho |
-| --- | --- | --- |
-| Tamanho da populacao | 50, 100 e 200 | 10% fixa |
-| Taxa de mutacao | 100 fixa | 1%, 5% e 10% |
+## Leitura e limites
 
-A configuracao populacao 100 / mutacao 10% e compartilhada: sao cinco
-configuracoes distintas, dois cenarios e dez sementes = 100 execucoes.
-Fixar cruzamento em 90%, elitismo em uma rota, torneio com k=3 e parada em
-1.000 geracoes ou 200 geracoes consecutivas sem melhoria. Uma melhoria e uma
-distancia estritamente menor que a melhor anterior. Cada filho recebe uma
-decisao de mutacao; 10% nao significa inverter 10% dos indices.
+Apresentamos média e desvio-padrão amostral de dez buscas por configuração.
+O gráfico de convergência usa sempre a semente 1, sem selecionar o melhor
+caso. As curvas terminam na parada real, sem prolongamento artificial.
+Os tempos são da mesma máquina e as buscas são sequenciais.
 
-## Combinado para a integracao
-
-- Gerar os pontos com `gerar_pontos(cenario, 10, semente_pontos)` ou carregar
-  as coordenadas de `pontos.csv` na ordem dos indices.
-- Inicializar um `std::mt19937 rng(semente_ag)` por execucao e passa-lo aos
-  operadores. Nao reutilizar esse gerador para criar os pontos.
-- A referencia `distancia_rota_aleatoria` usa
-  `criar_rota_aleatoria(10, semente_ag)` sobre os pontos fixos. E uma rota
-  independente de referencia, nao a melhor rota da populacao inicial.
-- Guardar tambem a melhor distancia da geracao zero no historico do ciclo,
-  para medir a melhoria dentro de cada execucao.
-- Medir o tempo com `std::chrono::steady_clock`, incluindo criacao da
-  populacao e evolucao, excluindo geracao de pontos, exportacao e desenhos.
-- `geracoes_executadas` conta apenas as geracoes evoluidas; a populacao
-  inicial e a geracao zero. O historico deve ter esse total mais uma linha.
-- Preencher `resultados.csv` pelo `id` do plano, com status `concluido`,
-  melhor distancia final, tempo em segundos e geracoes executadas. Falhas
-  recebem status `erro`, metricas vazias e uma explicacao em arquivo separado.
-- Registrar compilador (`g++ --version`), sistema (`uname -a`), flags de
-  compilacao e revisao do codigo (`git rev-parse HEAD`). Medir no mesmo
-  computador, sem execucoes concorrentes.
-
-A parte dos operadores permanece em `genetico.hpp/.cpp`. A parte do ciclo
-consome esses operadores; este preparador nao define uma interface nova para
-eles. A conexao entre plano e executavel sera feita quando o ciclo existir.
-
-## Como explicar a avaliacao
-
-Cada individuo e uma permutacao dos indices das cidades. A funcao objetivo e
-a soma das distancias euclidianas entre cidades consecutivas, incluindo o
-retorno da ultima para a primeira. Menor distancia significa melhor individuo.
-O torneio pode comparar as distancias diretamente; nao precisa converter para
-`1 / distancia`, que ainda exigiria tratar distancia zero.
-
-No circulo, os indices ja seguem a ordem ao redor do centro. Percorre-los em
-ordem fornece a solucao ideal: o perimetro do poligono regular inscrito,
-`n * 2 * raio * sen(pi/n)`. Para 10 pontos e raio 40, sao aproximadamente
-247,2136 unidades. Nao usar o comprimento da circunferencia como ideal.
-Para o cenario aleatorio, nao estamos afirmando conhecer o otimo.
-
-## Analise depois da integracao
-
-Para cada cenario e configuracao, apresentar media e desvio-padrao amostral
-da melhor distancia final e do tempo nas dez sementes, alem do numero de
-execucoes concluidas. Nao escolher apenas a melhor semente nem tratar celulas
-vazias como zero. Registrar tambem as geracoes e comparar as configuracoes
-pelas mesmas sementes.
-
-Calcular a melhoria sobre a referencia aleatoria por execucao:
-`100 * (distancia_referencia - melhor_distancia) / distancia_referencia`.
-Valores negativos indicam um resultado pior que essa referencia.
-No circulo, calcular o excesso sobre o ideal:
-`100 * (melhor_distancia / distancia_ideal - 1)`.
-Uma distancia abaixo do ideal alem de arredondamento indica um problema.
-
-A primeira demonstracao deve mostrar a rota inicial, a final e a curva da
-melhor distancia por geracao nos dois cenarios. Com elitismo, essa curva nao
-deve subir, mas pode ficar constante; uma melhoria nao e garantida a cada
-geracao. Caso todos atinjam o ideal com 10 pontos, combinar uma rodada maior
-para distinguir as configuracoes antes de tirar conclusoes.
+Não foi feito teste de significância. Um mapa por cenário e tamanho não
+representa todos os problemas possíveis. Os mesmos limites de gerações
+não representam o mesmo número de avaliações para populações diferentes.
+A parada por melhoria estrita pode ser sensível a arredondamentos; nenhuma
+regra do ciclo foi alterada entre as configurações.
