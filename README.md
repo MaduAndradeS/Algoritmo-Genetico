@@ -1,121 +1,118 @@
 # Caixeiro viajante com algoritmo genético
 
-## Primeira etapa
+Projeto em C++17 com seleção por torneio, cruzamento OX, mutação por inversão,
+elitismo e interface gráfica Qt 6. Há experimentos comparativos já executados
+e uma explicação para apoiar o relatório e a apresentação.
 
-C++17 ou superior, sem bibliotecas externas. Na pasta do projeto, compile e execute:
+## Abrir a interface gráfica
+
+Requisitos: compilador C++17, CMake e Qt 6 Widgets. No terminal:
 
 ```bash
-g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic main.cpp cenarios.cpp -o caixeiro
+cd "/home/guimasca/Documents/Machine Learning/Algoritimo_Genético/Algoritmo-Gen-tico"
+cmake -S . -B build/qt
+cmake --build build/qt -j 2
+./build/qt/caixeiro_qt
+```
+
+Escolha o cenário e clique em **Executar algoritmo**. A interface apresenta
+a rota, melhor distância e média da população, curva de evolução e navegação
+pelas gerações. Use **Reproduzir**, **Salvar histórico (CSV)** e
+**Salvar imagem (PNG)** para explorar e exportar a execução.
+
+## Ver os experimentos concluídos e a explicação
+
+Abra `experimentos/comparativos/relatorio.html` no navegador pelo gerenciador
+de arquivos. Essa pasta contém resultados reais de **200 execuções**,
+tabelas e gráficos de comparação, convergência e rotas iniciais/finais.
+
+- [Explicação do algoritmo e roteiro de apresentação](experimentos/EXPLICACAO.md).
+- [Resultados, conclusões e limitações](experimentos/comparativos/RESULTADOS.md).
+- [Protocolo dos experimentos](experimentos/PROTOCOLO.md).
+
+São cinco configurações, dois cenários (aleatório e circular), dois tamanhos
+(10 e 30 pontos) e dez sementes por configuração. Os CSVs contêm resultados
+individuais, resumo estatístico, histórico, pontos e rotas. A pasta concluída
+é independente das antigas pastas `dados` e `dados_rodada_2`, que continham
+somente o planejamento.
+
+## Executar novas comparações
+
+Requisitos: compilador C++17, Make e Python 3; não precisa de Qt nem de
+pacotes Python externos. Na raiz do projeto:
+
+```bash
+make comparativos SAIDA=experimentos/nova_comparacao
+```
+
+Esse comando **executa o algoritmo 200 vezes** e depois gera tabelas,
+relatório HTML e gráficos SVG. Use um nome de pasta que ainda não exista:
+o executor recusa sobrescrever rodadas anteriores. Os tempos variam entre
+execuções e computadores, mesmo quando as rotas se repetem.
+
+Para refazer somente a análise dos resultados já existentes:
+
+```bash
+python3 analisar_experimentos.py experimentos/comparativos
+```
+
+O comando antigo `make experimentos` apenas prepara tabelas vazias em
+`experimentos/dados`; não executa a busca e não gera os gráficos comparativos.
+Ele foi mantido para preservar a primeira etapa do trabalho.
+
+## Verificar o código
+
+```bash
+make verificar verificar_genetico verificar_ciclo
+```
+
+Os testes verificam cenários, distâncias, rotas inválidas, sementes,
+operadores, preservação das permutações e funcionamento do ciclo.
+O executor comparativo também recalcula as distâncias das melhores rotas,
+confere o histórico, o elitismo e o limite ideal circular antes de exportar.
+A análise confere os 200 IDs, grupos, sementes e históricos.
+
+## Programa inicial pelo terminal
+
+```bash
+make
 ./caixeiro --cenario aleatorio --pontos 10 --semente 42
 ./caixeiro --cenario circular --pontos 10 --semente 42
 ```
 
-Também é possível compilar com `make`. Use `./caixeiro --help` para ver as opções.
+Esse executável da primeira etapa ainda mostra somente uma rota aleatória
+como referência. Seus SVGs e JSONs ficam em `resultados`. Para acompanhar o
+algoritmo genético, use a interface Qt ou o executor comparativo.
+Execuções iguais do programa inicial sobrescrevem suas saídas; use
+`--saida outra_pasta` para preservar resultados separados.
 
-Abra os SVGs de `resultados` no navegador. Os JSONs contêm pontos, rota e
-distância. Execuções com os mesmos parâmetros sobrescrevem os arquivos;
-use `--saida outra_pasta` para preservar resultados separados.
+## Organização do código
 
-Ainda não existe otimização: a rota aleatória serve de referência inicial.
-Pontos aleatórios são uniformes no quadrado [0,100] × [0,100]. Pontos circulares
-são igualmente espaçados, com centro (50,50) e raio 40. A referência ideal é
-o perímetro do polígono regular, `n * 2 * raio * sen(pi/n)`.
+| Arquivos | Responsabilidade |
+| --- | --- |
+| `cenarios.hpp/.cpp` | Pontos, rotas aleatórias, distância total e referência circular. |
+| `genetico.hpp/.cpp` | População, seleção por torneio, cruzamento OX e inversão. |
+| `ciclo.hpp/.cpp` | Avaliação, elitismo, evolução, parada e histórico. |
+| `main_qt.cpp`, `janela.*`, `widget*`, `trabalhador.*` | Interface, desenhos e execução em thread de trabalho. |
+| `main.cpp` | Programa inicial de referência, sem evolução. |
+| `preparar_experimentos.cpp` | Planejamento da primeira etapa, sem executar o AG. |
+| `executar_experimentos.cpp` | Execução sequencial das comparações e exportação dos dados. |
+| `analisar_experimentos.py` | Validação dos CSVs, estatísticas, gráficos e relatório. |
 
-## Contrato de integração
+O contrato usa `Ponto { double x, y; }` e `Rota = std::vector<int>`: uma
+permutação dos índices sem repetir a cidade inicial no fim. A função
+`distancia_total` inclui o retorno. Menor distância é melhor.
 
-- `pontos`: `std::vector<Ponto>`, com campos `double x` e `double y`.
-- `rota`: `Rota` (apelido para `std::vector<int>`), permutação de todos os índices, sem repetir o início no final.
-- `distancia_total(rota, pontos)`: distância euclidiana incluindo o retorno.
-- Menor distância é melhor. Sementes permitem repetir resultados.
-- `cenarios.hpp` declara o contrato; `cenarios.cpp` contém dados e avaliação;
-  `main.cpp`, execução e gráfico.
+`executar_ag(pontos, parametros, callback)` devolve `ResultadoAG` com melhor
+rota, distância, tempo, gerações e histórico. O registro zero representa a
+população inicial. O callback opcional permite atualizações por geração;
+a interface encaminha esses dados por sinais Qt.
 
-## Próximos passos dos três integrantes
+Parâmetros iniciais: população 100, cruzamento 90%, mutação 10% por filho,
+elitismo 1, torneio 3, limite de 1.000 gerações ou 200 sem melhoria estrita.
+Os pontos aleatórios são uniformes no quadrado [0,100] × [0,100]. O círculo
+tem centro (50,50), raio 40 e pontos igualmente espaçados.
 
-A parte de dados já tem verificações automatizadas (`make verificar`) e um
-preparador do plano experimental (`make experimentos`). O protocolo e o
-combinado de integração estão em [experimentos/PROTOCOLO.md](experimentos/PROTOCOLO.md).
-O preparador gera pontos fixos e 100 execuções planejadas; os resultados da
-otimização permanecem vazios até a integração do ciclo evolutivo.
-
-### Integrante 1 — dados e experimentos
-
-A base já está implementada. Revisar as distâncias e os dois cenários.
-Preparar comparações entre populações 50/100/200 e taxas de mutação
-1%/5%/10%, alterando uma variável por vez e mantendo os pontos fixos.
-Após integrar o algoritmo, repetir com diferentes sementes e registrar
-melhor distância, tempo e gerações. Explicar a aptidão e a referência circular.
-
-### Integrante 2 — operadores genéticos
-
-Criar `genetico.hpp` e `genetico.cpp`. Combinar estas funções, recebendo
-um `std::mt19937& rng` para controlar a aleatoriedade:
-
-- `criar_populacao(quantidade_pontos, tamanho, rng)` → `std::vector<Rota>`.
-- `selecionar_torneio(populacao, distancias, rng, k=3)` → `Rota`, cópia do vencedor.
-- `cruzar_ox(pai1, pai2, rng)` → `Rota`, um filho válido.
-- `mutar_inversao(rota, rng)` → `Rota`, cópia com um trecho invertido.
-
-Verificar que os pais não mudam e que cada filho contém todos os índices
-exatamente uma vez. Explicar por que OX e inversão preservam permutações.
-
-### Integrante 3 — ciclo evolutivo e visualização
-
-Integrar avaliação, seleção, cruzamento, mutação e nova população.
-Começar com 100 indivíduos, cruzamento de 90%, mutação de 10% por filho e
-elitismo de uma rota. Parar em 1.000 gerações ou 200 sem melhoria.
-São hipóteses iniciais para os experimentos, não escolhas definitivas.
-
-Registrar a geração inicial e cada geração: número, melhor rota (copiada),
-melhor distância, distância média e tempo decorrido. Depois criar uma curva
-de convergência e navegação pelas rotas. Tornar os parâmetros configuráveis.
-
-## Próxima entrega conjunta
-
-Rodar os dois cenários com 10 pontos e mostrar a distância melhorando ao
-longo das gerações. Todos documentam e apresentam suas partes.
-A interface completa vem depois que o ciclo evolutivo funcionar.
-
-## Reprodutibilidade
-
-A mesma semente reproduz a execução no mesmo ambiente C++. As sequências
-não precisam coincidir com a versão anterior em Python, nem entre diferentes
-implementações da biblioteca padrão C++. Registrem compilador e ambiente.
-
-## Etapa 2 — ciclo evolutivo
-
-O ciclo completo foi implementado em `ciclo.hpp` e `ciclo.cpp`, aproveitando
-os operadores ja existentes de `genetico.cpp`. Por padrao, usa populacao 100,
-crossover OX de 90%, mutacao por inversao de 10% por filho, 1 elite,
-torneio de 3, limite de 1000 geracoes e parada apos 200 geracoes sem melhora.
-
-- `executar_ag(pontos, parametros, callback)` retorna `ResultadoAG`, com a
-  melhor rota, distancia final, tempo, numero de geracoes evoluidas e historico.
-- `historico[0]` guarda a populacao inicial; `historico[g]` registra a melhor
-  rota daquela geracao, a melhor distancia, a media e o tempo acumulado.
-- O `callback` opcional e chamado a cada geracao. Para uso com Qt, execute o
-  algoritmo fora da thread da interface e encaminhe atualizacoes por sinais.
-  Nao modifique widgets Qt diretamente dentro do callback de uma worker thread.
-- As distancias entre pontos sao pre-calculadas em uma matriz antes do cronometro;
-  o cronometro mede criacao da populacao e ciclo evolutivo, sem desenhar pontos.
-- `geracoes_executadas` nao inclui a geracao inicial, logo o historico tem
-  `geracoes_executadas + 1` registros.
-
-Testar esta etapa sem Qt:
-
-```bash
-make verificar_ciclo
-```
-
-Exemplo de uso em outra unidade de codigo:
-
-```cpp
-#include "ciclo.hpp"
-#include "cenarios.hpp"
-
-auto pontos = gerar_pontos("circular", 10, 42);
-ParametrosAG parametros;
-parametros.semente = 1;
-auto resultado = executar_ag(pontos, parametros);
-// resultado.historico[i].melhor_rota e .melhor_distancia
-```
+A mesma semente repete a busca no mesmo ambiente C++; bibliotecas padrão
+diferentes podem gerar sequências diferentes. O ambiente e os hashes das
+fontes da rodada entregue estão junto aos resultados.
