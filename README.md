@@ -18,11 +18,12 @@ Dois cenários: **pontos aleatórios** uniformes e **círculo de pontos**
 | `main_qt.cpp`, `janela.*`, `widgetrota.*`, `widgetgrafico.*`, `trabalhador.*` | Interface Qt: janela, desenho da rota, curva de convergência e execução em outra thread. |
 | `CMakeLists.txt` | Compilação da interface Qt. |
 | `executar_experimentos.cpp` | Executa as comparações e exporta os dados em CSV. |
+| `executar_bonus.cpp` | Bônus: círculo com 100 e 200 pontos, tempo de convergência e rotas em gerações intermediárias. |
 | `analisar_experimentos.py` | Valida os CSVs e gera estatísticas, gráficos e relatório HTML. |
 | `verificar_cenarios.cpp`, `verificar_genetico.cpp`, `verificar_ciclo.cpp` | Testes automáticos, sem Qt. |
 | `main.cpp` | Programa da primeira etapa: mostra apenas uma rota aleatória de referência. |
 | `Makefile` | Atalhos para testes, experimentos e o programa da primeira etapa. |
-| `experimentos/` | Explicação (`EXPLICACAO.md`), protocolo (`PROTOCOLO.md`) e resultados (`comparativos/`). |
+| `experimentos/` | Explicação (`EXPLICACAO.md`), protocolo (`PROTOCOLO.md`), bônus (`BONUS.md`, `bonus/`) e resultados (`comparativos/`). |
 
 ## Abrir a interface gráfica
 
@@ -67,10 +68,11 @@ resultados individuais, o resumo estatístico, o histórico, os pontos e as rota
 - [Explicação do algoritmo e roteiro de apresentação](experimentos/EXPLICACAO.md)
 - [Resultados, conclusões e limitações](experimentos/comparativos/RESULTADOS.md)
 - [Protocolo dos experimentos](experimentos/PROTOCOLO.md)
+- [Bônus: círculo com 100 e 200 pontos](experimentos/BONUS.md)
 
 ### Executar novas comparações
 
-Requisitos: compilador C++, Make e Python 3 (não precisa de Qt nem de pacotes
+Requisitos: compilador C++17, Make e Python 3 (não precisa de Qt nem de pacotes
 Python externos). Na raiz do projeto:
 
 ```bash
@@ -85,6 +87,24 @@ pasta já existente:
 
 ```bash
 python3 analisar_experimentos.py experimentos/comparativos
+```
+
+### Bônus: círculo com muitos pontos
+
+O teste com 100 e 200 pontos em círculo (cinco sementes por tamanho) atingiu a
+distância ideal nas 10 execuções da rodada entregue (em outro ambiente, 9 de 10; detalhes no `BONUS.md`). Os tempos de convergência, as rotas em gerações
+intermediárias e as curvas estão em [experimentos/BONUS.md](experimentos/BONUS.md)
+e na pasta `experimentos/bonus/`. Para repetir (a pasta de saída deve ser nova):
+
+```bash
+make bonus SAIDA_BONUS=experimentos/bonus_novo
+```
+
+Sem `make`, no Windows:
+
+```powershell
+g++ -std=c++17 -O2 executar_bonus.cpp ciclo.cpp genetico.cpp cenarios.cpp -o build\executar_bonus.exe
+.\build\executar_bonus.exe experimentos\bonus_novo
 ```
 
 ## Testes

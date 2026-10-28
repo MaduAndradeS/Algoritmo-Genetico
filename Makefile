@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wpedantic
 
-.PHONY: all testes verificar verificar_genetico verificar_ciclo comparativos
+.PHONY: all testes verificar verificar_genetico verificar_ciclo comparativos bonus
 all: caixeiro
 
 # Programa da primeira etapa (apenas uma rota aleatoria de referencia).
@@ -42,3 +42,13 @@ SAIDA ?= experimentos/comparativos
 comparativos: build/executar_experimentos
 	./build/executar_experimentos "$(SAIDA)"
 	python3 analisar_experimentos.py "$(SAIDA)"
+
+# --- Bonus: circulo com muitos pontos ---
+build/executar_bonus: executar_bonus.cpp ciclo.cpp ciclo.hpp genetico.cpp genetico.hpp cenarios.cpp cenarios.hpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS) executar_bonus.cpp ciclo.cpp genetico.cpp cenarios.cpp -o $@
+
+# A pasta nao pode existir.
+SAIDA_BONUS ?= experimentos/bonus
+bonus: build/executar_bonus
+	./build/executar_bonus "$(SAIDA_BONUS)"
