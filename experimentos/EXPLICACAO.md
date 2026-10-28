@@ -1,179 +1,165 @@
-# Explicação do projeto: caixeiro viajante com algoritmo genético
+# Algoritmo genético para o problema do caixeiro viajante
 
-## 1. Qual problema estamos resolvendo?
+Este documento descreve o algoritmo implementado e justifica as escolhas de
+projeto. Os números citados vêm dos experimentos em
+[comparativos/RESULTADOS.md](comparativos/RESULTADOS.md); o desenho dos
+experimentos está em [PROTOCOLO.md](PROTOCOLO.md).
 
-Queremos visitar todas as cidades uma única vez e voltar à cidade inicial,
-percorrendo a menor distância possível. É o problema do caixeiro viajante.
-Aqui, cada cidade é um ponto no plano e o custo de viajar entre duas cidades
-é a distância em linha reta. Não estamos simulando ruas nem trânsito.
+## 1. Problema
 
-O número de ordens possíveis cresce muito com a quantidade de cidades.
-O algoritmo genético busca boas soluções sem precisar experimentar todas
-as ordens. É uma heurística: pode encontrar soluções muito boas, mas não
-promete o melhor caminho possível em toda execução.
+Dado um conjunto de cidades no plano, buscamos a ordem de visita que passa por
+todas uma única vez e retorna à cidade inicial com a menor distância total. O
+custo entre duas cidades é a distância euclidiana. O número de ordens possíveis
+cresce fatorialmente com a quantidade de cidades, o que inviabiliza testar todas
+em instâncias maiores. O algoritmo genético é uma heurística: costuma encontrar
+boas soluções, mas não garante o ótimo em toda execução.
 
-## 2. Como representamos uma solução?
+Dois cenários são usados:
 
-Cada indivíduo é uma rota: um vetor com os índices de todas as cidades,
-sem repetição. Por exemplo, para quatro cidades, `[0, 2, 1, 3]` significa
-visitar 0 → 2 → 1 → 3 → 0. O retorno existe no cálculo e no desenho, mas não
-repetimos o índice inicial dentro do vetor. Os experimentos usam 10 e 30 cidades.
+- **Aleatório:** pontos uniformes no quadrado [0, 100] × [0, 100]. O ótimo não é
+  conhecido.
+- **Circular:** pontos igualmente espaçados em um círculo de raio 40 e centro
+  (50, 50). O percurso ótimo segue o polígono inscrito, e sua distância é
+  `n × 2 × 40 × sen(π/n)`: 247,2136 para 10 cidades e 250,8683 para 30. Esse
+  valor é o perímetro do polígono, não o comprimento da circunferência, e serve
+  de referência para verificar os resultados.
 
-Uma população é um conjunto de rotas candidatas. População 100 significa
-100 caminhos competindo e produzindo novos caminhos em cada geração.
-A população inicial é formada por permutações aleatórias.
+Há duas sementes independentes: a dos pontos, que define o mapa aleatório (fixa
+em 42), e a do algoritmo, que define os sorteios da busca (1 a 10 nos
+experimentos).
 
-Na terminologia genética, cada posição é um gene cujo valor é o índice de
-uma cidade; a rota completa é o cromossomo. Escolhemos uma permutação porque
-ela representa diretamente a restrição de visitar cada cidade uma vez.
-Usamos OX porque ele combina a ordem dos pais preservando essa restrição,
-sem precisar reparar filhos com cidades repetidas ou ausentes.
+## 2. Representação e cruzamento
 
-## 3. Como avaliamos as rotas?
+**Representação.** Cada indivíduo (cromossomo) é um vetor com os índices das
+cidades, sem repetição: `[0, 2, 1, 3]` representa 0 → 2 → 1 → 3 → 0. Cada
+posição é um gene e seu valor é o índice de uma cidade. O retorno à cidade
+inicial é considerado no cálculo e no desenho, mas o índice inicial não é
+repetido no vetor. A população inicial é formada por permutações aleatórias.
 
-Para dois pontos A e B, calculamos `sqrt((Ax - Bx)² + (Ay - By)²)`.
-Somamos essa distância para cada par consecutivo, incluindo a volta do
-último ponto ao primeiro. **Menor distância representa maior qualidade.**
+A permutação foi escolhida porque expressa diretamente a restrição do problema:
+toda cidade aparece exatamente uma vez. Representações mais simples, como uma
+sequência binária ou um vetor de inteiros livres, permitiriam rotas inválidas,
+com cidades repetidas ou ausentes, e exigiriam correção após cada operação.
 
-Essa avaliação é o papel da aptidão no projeto. Não precisamos transformar
-as distâncias em probabilidades: a seleção por torneio pode escolher
-simplesmente a menor distância entre os candidatos sorteados.
+**Cruzamento OX (Order Crossover).** O filho recebe de `pai1` o trecho entre dois
+índices sorteados, nas mesmas posições. As demais posições são preenchidas com as
+cidades de `pai2`, na ordem em que aparecem a partir do fim do trecho (dando a
+volta no vetor) e pulando as já usadas. O filho é sempre uma permutação válida,
+sem necessidade de reparo, e herda de `pai2` a ordem relativa das cidades, que é
+o que importa em um percurso. Um cruzamento posicional simples, como o de um
+ponto de corte, geraria cidades repetidas.
 
-O código do ciclo usa uma matriz com as distâncias entre todos os pares
-para evitar recalcular as mesmas raízes quadradas a cada avaliação.
+Cada filho passa pelo OX com probabilidade de 90%; nos demais casos, copia o
+primeiro pai selecionado.
 
-## 4. O que acontece em uma geração?
+## 3. Aptidão
+
+A qualidade de uma rota é a soma das distâncias entre cidades consecutivas,
+incluindo a volta do último ponto ao primeiro. **Menor distância é melhor.**
+
+Não convertemos a distância em uma aptidão crescente (por exemplo, `1/distância`)
+porque a seleção por torneio só precisa comparar candidatos: vence o de menor
+distância. Assim, a escala dos valores não influencia a seleção. Para evitar
+recalcular raízes quadradas, o ciclo usa uma matriz com a distância entre todos
+os pares de cidades, calculada uma vez por execução.
+
+## 4. Ciclo evolutivo
+
+Em cada geração:
 
 1. Avaliamos todas as rotas e registramos a melhor e a distância média.
-2. Copiamos a melhor rota intacta para a próxima população: elitismo de 1.
-3. Selecionamos pais por torneios de três candidatos sorteados com reposição.
-   Vence a menor distância. Sorteios podem repetir um candidato.
-4. Para cada novo filho, há 90% de chance de fazer cruzamento OX. Caso
-   contrário, copiamos o primeiro pai selecionado.
-5. Cada filho tem uma chance de sofrer mutação por inversão.
-6. Repetimos até completar a população e avaliamos a nova geração.
+2. A melhor rota é copiada sem alteração para a próxima população (elitismo
+   de 1).
+3. Os pais são escolhidos por torneio: sorteiam-se três candidatos, com
+   reposição, e vence o de menor distância.
+4. Cada filho é gerado por OX (90%) ou por cópia de um pai.
+5. Cada filho sofre mutação por inversão com a probabilidade configurada.
+6. Repete-se até completar a população.
 
-O **cruzamento OX** sorteia dois índices e copia o trecho entre eles do
-primeiro pai. Depois preenche os lugares restantes com as cidades do
-segundo pai, seguindo sua ordem circular e pulando as já usadas. Assim,
-não perde cidades nem cria repetições. O trecho pode abranger toda a rota.
+O elitismo garante que a melhor distância nunca piora entre gerações. A
+distância média da população pode subir.
 
-A **mutação por inversão** sorteia dois índices e inverte a ordem do trecho.
-Exemplo: `[0, 1, 2, 3, 4]` pode virar `[0, 3, 2, 1, 4]`. Ela preserva as
-cidades e modifica sua ordem. Se os índices sorteados forem iguais, nada
-muda. Mutação de 10% é uma chance por filho, não 10% das cidades.
+**Mutação por inversão.** Sorteiam-se dois índices e inverte-se a ordem do trecho
+entre eles; por exemplo, `[0, 1, 2, 3, 4]` pode virar `[0, 3, 2, 1, 4]`. A
+operação preserva as cidades e troca apenas conexões entre elas, o que costuma
+desfazer cruzamentos de arestas, um defeito típico de rotas ruins no plano. A
+taxa é por filho, não por gene.
 
-O **elitismo** impede que percamos a melhor distância já obtida. Por isso,
-a curva da melhor distância pode cair ou ficar constante, mas não deve subir.
-A distância média da população pode subir mesmo com elitismo.
+## 5. Taxa de mutação
 
-## 5. Quando o algoritmo para?
+Adotamos 10% por filho. Foram comparadas as taxas de 1%, 5% e 10%, com população
+100:
 
-Paramos ao atingir 1.000 gerações evoluídas ou 200 gerações consecutivas
-sem melhoria estrita. A geração zero é a população inicial. Se evoluímos
-215 gerações, o histórico tem 216 registros.
+- Com 10 cidades, as três chegaram à mesma distância final nas dez sementes
+  (309,9428 no mapa aleatório e 247,2136 no circular); o problema é pequeno
+  demais para diferenciá-las.
+- Com 30 cidades circulares, a distância ideal foi atingida em 3 sementes com
+  1%, em 9 com 5% e em 10 com 10%.
+- Com 30 cidades aleatórias, a distância média foi 559,5689 (1%), 555,2924 (5%)
+  e 548,5062 (10%).
 
-A regra atual usa `<` para detectar melhoria. Arredondamentos em ponto
-flutuante podem contar uma diferença minúscula como melhoria e adiar a
-parada. Os testes não modificaram essa regra; o relatório documenta isso.
-Parar por estagnação não prova que o ótimo foi atingido.
+Em geral, taxas baixas favorecem a perda de diversidade e a estagnação; nos
+casos testados, a taxa de 10% foi a mais consistente. Taxas acima de 10% não foram
+avaliadas, portanto 10% é a melhor entre as testadas, não uma taxa ótima em
+geral.
 
-Escolhemos dois limites complementares: 1.000 gerações limitam o trabalho
-máximo de uma execução, enquanto 200 sem melhoria encerram buscas que
-ficaram estagnadas, permitindo novas tentativas antes de desistir. São
-valores heurísticos iniciais, não limites teoricamente ótimos. Os experimentos
-compararam população e mutação, mas não compararam outras regras de parada;
-portanto, não afirmamos que 1.000/200 sejam os melhores valores possíveis.
+## 6. Tamanho da população e critério de parada
 
-## 6. Por que existem dois cenários e duas sementes?
+**População.** Adotamos 100 indivíduos. Foram comparadas populações de 50, 100 e
+200, com mutação 10%:
 
-No cenário **aleatório**, os pontos ficam no quadrado de coordenadas 0 a 100.
-É um mapa irregular. Não calculamos seu ótimo exato neste trabalho.
+- Com 10 cidades, todas chegaram ao mesmo resultado; o tempo médio cresceu com a
+  população (de 4,0 ms para 12,4 ms no mapa aleatório, de 50 para 200).
+- Com 30 cidades circulares, as populações de 100 e de 200 atingiram o ideal nas
+  dez sementes; a de 50 atingiu em oito.
+- Com 30 cidades aleatórias, a distância média foi 566,5358 (50), 548,5062 (100)
+  e 537,7991 (200), com tempo médio de 15,6 ms, 22,2 ms e 40,8 ms.
 
-No **circular**, os pontos são igualmente espaçados em um círculo de raio
-40 e centro (50, 50). O caminho ideal segue a borda do polígono, em qualquer
-sentido. A referência é `n × 2 × 40 × sen(pi/n)`: aproximadamente 247,2136
-para 10 cidades e 250,8683 para 30. É o perímetro do polígono inscrito,
-não o comprimento da circunferência. Esse cenário permite conferir o
-resultado contra uma solução de distância conhecida.
+A população de 100 equilibra diversidade e custo: foi suficiente para atingir o
+ideal circular em todas as sementes com 30 cidades, gastando menos tempo que a de
+200. A de 200 obteve a menor média no mapa aleatório de 30 cidades, ao custo de
+quase o dobro do tempo.
 
-A **semente dos pontos** define o mapa aleatório. A **semente do AG** define
-os sorteios da busca. Mantivemos a primeira em 42 e variamos a segunda de
-1 a 10. Assim, repetimos a busca sem trocar de problema. A reprodução exata
-depende também do ambiente e da biblioteca padrão C++.
+**Parada.** O algoritmo termina ao atingir 1.000 gerações ou 200 gerações
+consecutivas sem melhoria estrita da melhor distância. O limite de 1.000 impõe um
+teto ao trabalho de uma execução; o de 200 encerra buscas estagnadas e ainda
+dá tempo para a mutação e o cruzamento produzirem melhorias tardias. São valores
+heurísticos: os experimentos não compararam outras regras de parada. A geração
+zero é a população inicial; se foram evoluídas 215 gerações, o histórico tem 216
+registros. A comparação por melhoria usa `<` em ponto flutuante, de modo que uma
+diferença minúscula por arredondamento pode contar como melhoria e adiar a
+parada. Parar por estagnação não prova que o ótimo foi atingido.
 
-## 7. O que comparamos e o que encontramos?
+## 7. Resultados e limites
 
-Executamos cinco configurações por cenário e tamanho: populações 50, 100 e
-200 com mutação 10%, e mutações 1%, 5% e 10% com população 100. A configuração
-100/10% é compartilhada, sem executá-la duas vezes na mesma comparação.
-São 100 execuções com 10 cidades e mais 100 com 30 cidades.
+Foram feitas 200 execuções: dois cenários (aleatório e circular), dois tamanhos (10 e 30 cidades), cinco configurações e dez sementes por
+configuração. Em resumo:
 
-Com **10 cidades**, as cinco configurações chegaram à mesma distância final
-nos dez sorteios: 309,9428 no mapa aleatório e 247,2136 no círculo. Neste
-último, todas atingiram o ideal conhecido. O mapa pequeno não distinguiu
-as configurações pela qualidade final; populações maiores custaram mais tempo.
-O empate no cenário aleatório não prova que encontramos seu ótimo.
+- Com 10 cidades, todas as configurações empataram na distância final e, no
+  circular, todas atingiram o ideal.
+- Com 30 cidades, as diferenças aparecem: população e mutação maiores
+  melhoraram a qualidade média, com custo maior de tempo no caso da população.
 
-Com **30 cidades aleatórias**, as médias foram 566,5358, 548,5062 e 537,7991
-para populações 50, 100 e 200, respectivamente, mantendo mutação 10%.
-A população 200 produziu a menor distância média, mas consumiu mais tempo.
-Com população 100, mutação 10% teve média melhor que 1% e 5% nesta amostra.
-
-Com **30 cidades circulares**, populações 100 e 200 com mutação 10% atingiram
-o ideal nas dez sementes. População 50 atingiu em oito. Fixando população
-100, as taxas de 1%, 5% e 10% atingiram o ideal em três, nove e dez sementes,
-respectivamente. A taxa de 10% foi a mais consistente nesse conjunto.
-
-Isso sugere que população 100 e mutação 10% são uma escolha inicial razoável
-para estes casos, enquanto população 200 pode melhorar a qualidade do mapa
-aleatório maior com mais custo. Não é uma recomendação universal: usamos
-um único mapa por cenário e tamanho, dez sementes e nenhuma análise de
-significância. Os números completos, tempos e desvios estão em
+As conclusões valem para os casos medidos: há um único mapa por cenário e
+tamanho, dez sementes, e não foi feito teste de significância. Os números
+completos, os tempos e os desvios estão em
 [comparativos/RESULTADOS.md](comparativos/RESULTADOS.md).
 
-A justificativa da população 100 é equilibrar variedade de rotas e custo:
-ela foi suficiente para atingir o ideal circular nas dez sementes com
-30 cidades, consumindo menos tempo médio que população 200. A população
-200 melhorou a média do mapa aleatório maior, mostrando essa troca entre
-qualidade e tempo. A escolha da mutação 10% é apoiada pela comparação com
-1% e 5%: mantendo população 100, foi a mais consistente no círculo maior
-e apresentou a menor distância média no mapa aleatório maior. Não testamos
-taxas acima de 10%, portanto essa escolha é a melhor observada entre as
-taxas avaliadas nesses casos, não uma taxa ótima universal.
+## 8. Gráficos e interface
 
-## 8. Como ler os gráficos e apresentar a interface?
+O [relatório visual](comparativos/relatorio.html) reúne três gráficos:
 
-O [relatório visual](comparativos/relatorio.html) reúne os três gráficos:
+- **Comparações:** média e desvio-padrão amostral (não intervalo de confiança) da
+  distância e do tempo nas dez sementes. Valores menores são melhores.
+- **Convergência:** melhor distância por geração para a semente 1 de cada
+  configuração. É uma ilustração, não a média das dez execuções.
+- **Rotas:** melhor rota da população inicial e rota final, com população 100,
+  mutação 10% e semente 1.
 
-- **Comparações:** barras com a média das distâncias e dos tempos em dez
-  sementes. Os traços representam um desvio-padrão amostral, não um intervalo
-  de confiança. Distâncias menores são melhores; tempos menores são mais rápidos.
-- **Convergência:** melhor distância por geração, com a semente 1 em todas
-  as configurações. Serve de ilustração, não é a média das dez execuções.
-- **Rotas:** melhor caminho da população inicial e caminho final com
-  população 100, mutação 10% e semente 1. A rota inicial mostrada aqui já
-  foi escolhida como a melhor da população inicial, não é uma rota isolada.
-
-Na interface Qt, escolha cenário e quantidade de pontos, mantenha os
-parâmetros iniciais e clique em **Executar algoritmo**. Mostre a evolução,
-use a barra de gerações ou **Reproduzir**, e salve o histórico CSV e a imagem
-PNG. O ciclo roda em uma thread de trabalho e envia atualizações para a
-janela, permitindo acompanhar e solicitar a parada sem executar o ciclo
-na thread principal da interface.
-
-## 9. Roteiro curto para a apresentação
-
-> Nosso projeto usa um algoritmo genético para buscar rotas curtas no
-> problema do caixeiro viajante. Cada indivíduo é uma ordem de visita às
-> cidades. Avaliamos a distância total, selecionamos pais por torneio,
-> cruzamos com OX e aplicamos mutação por inversão, preservando a melhor
-> rota por elitismo. Comparamos populações e taxas de mutação em dois
-> cenários, com dez sementes para cada configuração. Com dez cidades,
-> os resultados finais empataram. Com trinta, surgiram diferenças de
-> qualidade e custo. O cenário circular permitiu conferir se a distância
-> ideal foi atingida. As conclusões valem para os casos medidos; não há
-> garantia de ótimo para qualquer mapa.
-
-Cada integrante pode explicar sua parte: dados e experimentos; seleção,
-cruzamento e mutação; ciclo evolutivo, histórico e interface.
+A interface Qt permite escolher o cenário, a quantidade de pontos e todos os
+parâmetros do algoritmo, executar com acompanhamento ao vivo (rota, melhor
+distância, distância média e curva de convergência) e interromper a qualquer
+momento. Após a execução, é possível percorrer as gerações pelo slider, pela
+curva ou pelo botão de reprodução, e exportar o histórico em CSV e a imagem em
+PNG. O ciclo evolutivo roda em uma thread própria, e a janela recebe as
+atualizações por sinais do Qt, sem travar.

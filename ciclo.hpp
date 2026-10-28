@@ -34,7 +34,7 @@ struct ResultadoAG {
 };
 
 // O callback recebe o registro da geracao 0 e de cada geracao evoluida.
-// Pode ser usado para emitir atualizacoes para a interface Qt em outra etapa.
+// A interface Qt usa esse callback para receber as atualizacoes ao vivo.
 using CallbackGeracao = std::function<void(const RegistroGeracao&)>;
 
 ResultadoAG executar_ag(const std::vector<Ponto>& pontos,

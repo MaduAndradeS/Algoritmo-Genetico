@@ -4,8 +4,7 @@
 
 A integração foi concluída e as comparações foram executadas. Veja
 [comparativos/RESULTADOS.md](comparativos/RESULTADOS.md) e
-[EXPLICACAO.md](EXPLICACAO.md). As antigas pastas `dados` e `dados_rodada_2`
-continham planejamento, não resultados do algoritmo.
+[EXPLICACAO.md](EXPLICACAO.md).
 
 ## Desenho experimental
 
@@ -28,7 +27,7 @@ entre todas as combinações de população e mutação não foram estudadas.
 Da raiz do projeto, com C++17, Make e Python 3:
 
 ```bash
-make verificar verificar_genetico verificar_ciclo
+make testes
 make comparativos SAIDA=experimentos/nova_comparacao
 ```
 

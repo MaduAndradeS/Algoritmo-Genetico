@@ -2,6 +2,10 @@
 #include "cenarios.hpp"
 
 #include <algorithm>
+  // Os testes dependem de assert: mantem-nos ativos mesmo com -DNDEBUG.
+  #ifdef NDEBUG
+  #undef NDEBUG
+  #endif
 #include <cassert>
 #include <cmath>
 #include <iostream>
