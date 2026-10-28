@@ -143,6 +143,51 @@ SVGs e JSONs ficam em `resultados`; use `--saida outra_pasta` para preservar
 execuções anteriores. Para acompanhar o algoritmo genético, use a interface Qt ou
 o executor comparativo.
 
+## Roteiro completo no Windows (PowerShell)
+
+Sequência para compilar e executar todas as partes do projeto sem `make`, na
+raiz do repositório. Ajuste a versão e as pastas do Qt para a sua instalação.
+
+```powershell
+# 1. Preparação (uma vez por janela do PowerShell)
+$env:PATH = "C:\Qt\Tools\CMake_64\bin;C:\Qt\Tools\Ninja;C:\Qt\Tools\mingw1310_64\bin;C:\Qt\6.11.2\mingw_64\bin;" + $env:PATH
+mkdir build -Force
+
+# 2. Testes automáticos
+g++ -std=c++17 -O2 -Wall -Wextra verificar_cenarios.cpp cenarios.cpp -o build\verificar_cenarios.exe
+g++ -std=c++17 -O2 -Wall -Wextra verificar_genetico.cpp genetico.cpp -o build\verificar_genetico.exe
+g++ -std=c++17 -O2 -Wall -Wextra verificar_ciclo.cpp ciclo.cpp genetico.cpp cenarios.cpp -o build\verificar_ciclo.exe
+.\build\verificar_cenarios.exe; .\build\verificar_genetico.exe; .\build\verificar_ciclo.exe
+
+# 3. Programa da primeira etapa (gera um SVG em resultados\)
+g++ -std=c++17 -O2 main.cpp cenarios.cpp -o build\caixeiro.exe
+.\build\caixeiro.exe --cenario circular --pontos 10 --semente 42
+
+# 4. Interface gráfica
+cmake -S . -B build\qt -G Ninja -DCMAKE_PREFIX_PATH="C:\Qt\6.11.2\mingw_64"
+cmake --build build\qt
+.\build\qt\caixeiro_qt.exe
+
+# 5. Experimentos comparativos (200 execuções; a pasta de saída deve ser nova)
+g++ -std=c++17 -O2 executar_experimentos.cpp ciclo.cpp genetico.cpp cenarios.cpp -o build\executar_experimentos.exe
+.\build\executar_experimentos.exe experimentos\nova_comparacao
+python analisar_experimentos.py experimentos\nova_comparacao
+start experimentos\nova_comparacao\relatorio.html
+
+# 6. Bônus (a pasta de saída deve ser nova)
+g++ -std=c++17 -O2 executar_bonus.cpp ciclo.cpp genetico.cpp cenarios.cpp -o build\executar_bonus.exe
+.\build\executar_bonus.exe experimentos\novo_bonus
+start experimentos\novo_bonus\rotas_intermediarias_200.svg
+```
+
+Resultados esperados: os testes terminam com "Operadores geneticos: OK" e
+"Testes do ciclo OK"; no círculo de 10 pontos a distância final é 247,2136; a
+análise dos experimentos termina com "200 execuções validadas"; o bônus lista as
+execuções de 100 e 200 pontos com o tempo até o ideal. As pastas `build/` e
+`resultados/` são ignoradas pelo Git; as pastas de saída dos experimentos e do
+bônus devem ser removidas antes de qualquer commit, para não substituir os
+resultados entregues.
+
 ## Detalhes técnicos
 
 O contrato usa `Ponto { double x, y; }` e `Rota = std::vector<int>`: uma
@@ -164,4 +209,3 @@ perímetro do polígono regular, `n * 2 * raio * sen(pi/n)`.
 A mesma semente repete a busca no mesmo ambiente C++; bibliotecas padrão
 diferentes podem gerar sequências diferentes. O ambiente e os hashes das fontes
 da rodada entregue estão em `experimentos/comparativos/ambiente.txt`.
-
