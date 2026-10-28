@@ -1,0 +1,11 @@
+# Binarios e compilacao
+/caixeiro
+*.exe
+/build/
+# Saidas geradas
+/resultados/
+__pycache__/
+/experimentos/teste_local/
+
+# Configuracao pessoal do editor
+.vscode/

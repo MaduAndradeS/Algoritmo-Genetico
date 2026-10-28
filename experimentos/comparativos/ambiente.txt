@@ -1,0 +1,17 @@
+Data UTC: 2026-10-26T18:08:12.361257+00:00
+Sistema: Linux-7.1.8-arch1-3-x86_64-with-glibc2.44
+Python: 3.14.7
+Compilador: g++ (GCC) 16.2.1 20260810
+Revisao base: 03b96d95a329e592e06f63e572be96e74b0ab350
+Mudancas locais: executor e analise adicionados; ciclo e operadores sem alteracao.
+Flags: -std=c++17 -O2 -Wall -Wextra -Wpedantic
+Execucao sequencial; sem callback de interface; validacoes e exportacao fora do cronometro.
+Matriz de distancias calculada antes do cronometro interno do ciclo.
+SHA256 das fontes compiladas:
+bfb36bd8abf20f99df426e47319fa8ca425969254baf31bbb8c2cc5c9cd76bea  executar_experimentos.cpp
+7ea29792c1e72f09f6daa808f3709ef24048fd0b2d2ed6e45cbc64cbc540ee41  ciclo.cpp
+4dd36e749445e276380127800584a16471c633c9a635ae203c22897ce62dbe19  ciclo.hpp
+ef212ce46e0eef477588c06a8943fd15eff2b2d6adad26fa5f7925c5cfaaa27e  genetico.cpp
+a2e7f2be94fb0022a523bb3d84b522373768a9ae5a7cdb7ccffc26be006df50f  genetico.hpp
+47a95591a43e957d99061dd4224fa112e524cd559898faeaf55bd1af15986cb8  cenarios.cpp
+c116bafa83ed44480d224a225392c95c32504243442d3519e123ffb857075d45  cenarios.hpp
