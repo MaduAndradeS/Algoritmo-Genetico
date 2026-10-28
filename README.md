@@ -3,7 +3,8 @@
 Projeto em C++ que resolve o problema do caixeiro viajante em duas dimensões
 com um algoritmo genético: seleção por torneio, cruzamento OX, mutação por
 inversão e elitismo. Tem interface gráfica em Qt 6, experimentos comparativos já
-executados (200 execuções) e uma explicação para o relatório e a apresentação.
+executados (200 execuções), um teste bônus com círculos de 100 e 200 pontos e uma
+explicação do algoritmo e dos resultados.
 
 Dois cenários: **pontos aleatórios** uniformes e **círculo de pontos**
 (benchmark com solução ideal conhecida).
@@ -27,7 +28,7 @@ Dois cenários: **pontos aleatórios** uniformes e **círculo de pontos**
 
 ## Abrir a interface gráfica
 
-Requisitos: compilador C++17, CMake e Qt 6 (módulo Widgets).
+Requisitos: compilador C++, CMake e Qt 6 (módulo Widgets).
 
 **Linux ou macOS:**
 
@@ -72,7 +73,7 @@ resultados individuais, o resumo estatístico, o histórico, os pontos e as rota
 
 ### Executar novas comparações
 
-Requisitos: compilador C++17, Make e Python 3 (não precisa de Qt nem de pacotes
+Requisitos: compilador C++, Make e Python 3 (não precisa de Qt nem de pacotes
 Python externos). Na raiz do projeto:
 
 ```bash

@@ -24,7 +24,7 @@ entre todas as combinações de população e mutação não foram estudadas.
 
 ## Execução e arquivos
 
-Da raiz do projeto, com C++17, Make e Python 3:
+Da raiz do projeto, com um compilador C++, Make e Python 3:
 
 ```bash
 make testes
